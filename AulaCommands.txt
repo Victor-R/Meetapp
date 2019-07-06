@@ -1,0 +1,2 @@
+Comando para criar uma migration (Tabela?):
+yarn sequelize migration:create --name=create-users
