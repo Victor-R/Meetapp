@@ -1,2 +1,5 @@
 Comando para criar uma migration (Tabela?):
 yarn sequelize migration:create --name=create-users
+
+Comando para rodar migrations pro bd:
+yarn sequelize db:migrate
