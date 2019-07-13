@@ -1,8 +1,10 @@
 import * as Yup from 'yup';
-import { isBefore } from 'date-fns';
+import { isBefore, format } from 'date-fns';
 import { Op } from 'sequelize';
 import Meetup from '../models/Meetup';
 import Subscription from '../models/Subscription';
+import User from '../models/User';
+import Mail from '../../lib/Mail';
 
 class SubscriptionController {
   async index(req, res) {
@@ -37,7 +39,15 @@ class SubscriptionController {
 
     const { meetup_id } = req.body;
 
-    const meetup = await Meetup.findByPk(meetup_id);
+    const meetup = await Meetup.findByPk(meetup_id, {
+      include: [
+        {
+          model: User,
+          as: 'organizer',
+          attributes: ['name', 'email'],
+        },
+      ],
+    });
 
     if (!meetup) {
       return res.status(400).json({ error: 'Meetup not found' });
@@ -85,6 +95,21 @@ class SubscriptionController {
     const subscription = await Subscription.create({
       user_id: req.userId,
       meetup_id,
+    });
+
+    const userSubcribing = await User.findByPk(req.userId);
+
+    await Mail.sendMail({
+      to: `${meetup.organizer.name} <${meetup.organizer.email}>`,
+      subject: 'Nova Inscrição',
+      template: 'subscription',
+      context: {
+        organizer: meetup.organizer.name,
+        user: userSubcribing.name,
+        email: userSubcribing.email,
+        title: meetup.title,
+        date: format(meetup.date, 'dd/MM/yyyy - HH:mm'),
+      },
     });
 
     return res.json(subscription);
